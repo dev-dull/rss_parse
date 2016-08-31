@@ -31,7 +31,7 @@ rss_parse.RSSParser uses XPaths to identify the various parts of a news article 
 
 ####In top-down ordering, we see the following:
 #### Key: `xpathParse:`
-  Value: This is a static value that will always remain unchanged. It identifies the start of the XPath configuration and will serve to separate it from other configuration items in future versions of rss_parse.
+  Value: The value is a dictionary containing the following key:value pairs.
 
 #### Key: `stripHTML:`
   Value: This will either be `true` or `false` depending on if the RSS feed has undesired HTML content in the main body (description/summary) text. Generally it's a good idea to simply set this to `true`. However, some RSS feeds, such as Google News, add links to recommended stories. Stripping HTML in those cases can make the summary text confusing to read. A future version of xkcd_news will have an additional option to fine-tune what content should be stripped from the feed. A future version of rss_parse will permit this value to be a regular expression that represents what html should be removed, and what should be kept.
