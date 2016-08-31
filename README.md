@@ -1,6 +1,6 @@
 # rss_parse
 ## About rss_parse:
-rss_parse is a module for Python 3.4.2 or newer. It takes an RSS feed URL and a dictionary object that contains xpaths to the relevent data as input, fetchs the RSS feed data, parses it, and returns it as a _Story object containing the following details from each item in the RSS feed: title, body, url, publication date, and image resource URL.
+rss_parse is a module for Python 3.4.2 or newer. It takes an RSS feed URL and a dictionary object that contains xpaths to the relevent data as input, fetchs the RSS feed data, parses it, and returns it as an iterable object where each element contains the following details from each `<item>` in the RSS feed: title, body, url, publication date, and image resource URL.
 
 ## Sample Usage:
 ### Using a standard Python dictionary as a configuration object.
