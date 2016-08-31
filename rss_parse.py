@@ -1,22 +1,23 @@
 import arrow
 import logging
 import requests
+import datetime # DON'T do 'from datetime import date' since date is a variable below. x.x
 from lxml import etree
 from dateutil import parser
-from .rss_parse_consts import C, LogMessages
+from rss_parse.rss_parse_consts import C, LogMessages
 
 
 class RSSParser(list):
     def __init__(self, url, xpath_config):
         result = None
-        # TODO: news_feed.__init__: handle authenticated proxy nonsense.
+        # TODO: RSSParser.__init__: handle authenticated proxy nonsense.
         try:
             result = requests.get(url)
             if result.status_code == 200:
                 root = etree.fromstring(result.content)
             else:
                 # if we didn't get a solid result, treat it the same as an error.
-                # TODO: news_feed.__init__: see if requests.get() handles redirects for us.
+                # TODO: RSSParser.__init__: see if requests.get() handles redirects for us.
                 raise requests.exceptions.ConnectionError
         except requests.exceptions.ConnectionError as e:
             logging.error(LogMessages.E_UNABLE_TO_FETCH % (result.status_code if result else '<timeout>', url))
@@ -24,10 +25,12 @@ class RSSParser(list):
             logging.error(LogMessages.E_INVALID_XML % url)
         else:
             # effectively skip doing anything if we couldn't get or parse the feed.
-            # TODO: news_feed.__init__: I'm unsure how the rest of the app will behave to an empty (subclassed) list.
+            # TODO: RSSParser.__init__: I'm unsure how the rest of the app will behave to an empty (subclassed) list.
             for e in root.xpath(xpath_config[C.XPATH_CONFIG][C.ITEM_ELEM]):
                 # REMINDER! You overrode the append method.
-                self.append(*self._parse(e, xpath_config[C.XPATH_CONFIG]))
+                args = self._parse(e, xpath_config[C.XPATH_CONFIG])
+                if args:
+                    self.append(*args)
 
     def _parse(self, e, xpath_config):
         url = (self._safe_xpath(e, xpath_config[C.XP_URL], xpath_config[C.NAMESPACE]) or b'').decode()
@@ -37,7 +40,14 @@ class RSSParser(list):
         image = (self._safe_xpath(e, xpath_config[C.XP_IMAGE], xpath_config[C.NAMESPACE]) or b'').decode()
 
         body = C.STRIP_HTML_RE.sub('', body) if xpath_config[C.STRIP_HTML] else body
-        return url, title, body, parser.parse(date), image
+
+        # In python 3.4.2, parser.parse('') will give you today at midnight. In 3.4.3 it raises an exception.
+        if not date:
+            date = datetime.date.today().strftime('%Y-%m-%dT00:00:00')
+
+        if url and title:  # establish the minimum level of content to be worth keeping.
+            return url, title, body, parser.parse(date), image
+        return None
 
     @staticmethod
     def _safe_xpath(e, xp, ns):
