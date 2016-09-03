@@ -10,7 +10,6 @@ setup(name='rss_parse',
       url='https://github.com/dev-dull/rss_parse',
       license='MIT',
       py_modules=['rss_parse'],
-      package_dir = {'rss_parse':'./'},
       install_requires=['arrow', 'lxml'],
       classifiers=[
             'Development Status :: 4 - Beta',
