@@ -1,18 +1,24 @@
+import re
 import arrow
 import logging
 import requests
 import datetime # DON'T do 'from datetime import date' since date is a variable below. x.x
 from lxml import etree
 from dateutil import parser
-from rss_parse.rss_parse_consts import C, LogMessages
 
 
 class RSSParser(list):
     def __init__(self, url, xpath_config):
+        self._url = url
+        self._xpath_config = xpath_config
+        self.refresh()
+
+    def refresh(self):
+        self.clear()  # clearing out all of our stored values. Same as [].clear()
         result = None
-        # TODO: RSSParser.__init__: handle authenticated proxy nonsense.
+        # TODO: RSSParser.refresh: handle authenticated proxy nonsense.
         try:
-            result = requests.get(url)
+            result = requests.get(self._url)
             if result.status_code == 200:
                 root = etree.fromstring(result.content)
             else:
@@ -20,15 +26,15 @@ class RSSParser(list):
                 # TODO: RSSParser.__init__: see if requests.get() handles redirects for us.
                 raise requests.exceptions.ConnectionError
         except requests.exceptions.ConnectionError as e:
-            logging.error(LogMessages.E_UNABLE_TO_FETCH % (result.status_code if result else '<timeout>', url))
+            logging.error(LogMessages.E_UNABLE_TO_FETCH % (result.status_code if result else '<timeout>', self._url))
         except etree.XMLSyntaxError as e:
-            logging.error(LogMessages.E_INVALID_XML % url)
+            logging.error(LogMessages.E_INVALID_XML % self._url)
         else:
             # effectively skip doing anything if we couldn't get or parse the feed.
-            # TODO: RSSParser.__init__: I'm unsure how the rest of the app will behave to an empty (subclassed) list.
-            for e in root.xpath(xpath_config[C.XPATH_CONFIG][C.ITEM_ELEM]):
+            # TODO: RSSParser.refresh: I'm unsure how the rest of the app will behave to an empty (subclassed) list.
+            for e in root.xpath(self._xpath_config[C.XPATH_CONFIG][C.ITEM_ELEM]):
                 # REMINDER! You overrode the append method.
-                args = self._parse(e, xpath_config[C.XPATH_CONFIG])
+                args = self._parse(e, self._xpath_config[C.XPATH_CONFIG])
                 if args:
                     self.append(*args)
 
@@ -57,7 +63,7 @@ class RSSParser(list):
             logging.error(LogMessages.E_INVALID_XPATH%(xp, e.tag))
             return None
 
-        # TODO: news_feed._safe_xpath: detect and transform text encoding instead of throwing stuff out.
+        # TODO: RSSParser._safe_xpath: detect and transform text encoding instead of throwing stuff out.
         return item[0].encode('ascii', 'ignore') if item else None
 
     # override the append function to abstract away the init of _Story
@@ -70,6 +76,28 @@ class RSSParser(list):
             self.url = url
             self.title = title
             self.body = body
-            # TODO: _story.__init__: arrow.get and dateutil.parser.parse probably throw errors that need handled.
+            # TODO: _Story.__init__: arrow.get and dateutil.parser.parse probably throw errors that need handled.
             self.date = arrow.get(date)
             self.image = image if not image or image.lower().startswith('http') else 'http://'+image
+
+
+# C is for constants ...and that's good enough for me.
+class C(object):
+    # Expected configuration key items.
+    NAMESPACE = 'namespace'
+    STRIP_HTML = 'stripHTML'
+    ITEM_ELEM = 'item'
+    XPATH_CONFIG = 'xpathParse'
+    XP_TITLE = 'title'
+    XP_URL = 'url'
+    XP_BODY = 'body'
+    XP_DATE = 'date'
+    XP_IMAGE = 'image'
+
+    STRIP_HTML_RE = re.compile('<[^>]+>', flags=re.I)
+
+
+class LogMessages(object):
+    E_UNABLE_TO_FETCH = 'Unable to fetch URL. Got status %s: %s'
+    E_INVALID_XML = 'Could not parse XML from feed: %s'
+    E_INVALID_XPATH = 'Invalid xpath %s while processing tag %s'
