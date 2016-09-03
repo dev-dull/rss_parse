@@ -14,7 +14,7 @@ setup(name='rss_parse',
       classifiers=[
             'Development Status :: 4 - Beta',
             'Intended Audience :: Developers',
-            'Topic :: Software Development :: RSS and Atom feed parsing.',
+            'Topic :: Internet :: WWW/HTTP',
             'License :: OSI Approved :: MIT License',
             'Programming Language :: Python :: 3.4',
         ],
